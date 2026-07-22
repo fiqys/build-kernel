@@ -97,8 +97,12 @@ BUILD_BOOT_IMAGE()
         fi
         EVAL "mkdir -p \"$TMP_DIR/ramdisk_platform\""
 
-        LOG "- Copying prebuilts/vboot_platform/fstab.s5e8825 to ramdisk_platform/fstab.s5e8825"
-        EVAL "cp -rf \"$SRC_DIR/prebuilts/vboot_platform/fstab.s5e8825\" \"$TMP_DIR/ramdisk_platform\""
+        LOG "- Copying prebuilts/vboot_platform/fstab.s5e8845 to ramdisk_platform/fstab.s5e8845"
+        EVAL "cp -rf \"$SRC_DIR/prebuilts/vboot_platform/fstab.s5e8845\" \"$TMP_DIR/ramdisk_platform\""
+
+        LOG "- Copying sgpu firmware to ramdisk_platform/"
+        EVAL "cp -a \"$SRC_DIR/prebuilts/vboot_platform/first_stage_ramdisk\" \"$TMP_DIR/ramdisk_platform/\""
+        EVAL "cp -a \"$SRC_DIR/prebuilts/vboot_platform/lib\" \"$TMP_DIR/ramdisk_platform/\""
 
         EVAL "mkdir -p \"$TMP_DIR/ramdisk_platform/vendor/firmware\""
         LOG "- Copying touch firmware for $DEVICE from prebuilts/vboot_platform/vendor/firmware to ramdisk_platform/vendor/firmware"
@@ -151,7 +155,7 @@ BUILD_DT_IMAGE()
     local DTS_DIR
 
     if [[ "$IMAGE" == "dtb" ]]; then
-        CONFIGURATION="s5e8825"
+        CONFIGURATION="s5e8845"
         DTS_DIR="$BUILD_DIR/arch/arm64/boot/dts/exynos"
     elif [[ "$IMAGE" == "dtbo" ]]; then
         local SIZE

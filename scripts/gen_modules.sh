@@ -24,9 +24,8 @@ PRIORITY_MODULES=(
     "exynos-chipid_v2.ko"
     "exynos-reboot.ko"
     "clk_exynos.ko"
-    "exynos_mct.ko"
     "s3c2410_wdt.ko"
-    "i2c-exynos5.ko"
+    "exynos_mct_v3.ko"
 )
 
 declare -A MODULE_MAP

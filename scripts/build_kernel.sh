@@ -61,7 +61,7 @@ if [[ ! -d "$KERNEL_DIR" ]]; then
 
     if [[ ! -d "$KERNEL_DIR" ]]; then
         LOG "- Cloning kernel source"
-        EVAL "git clone -j\"$(nproc --all)\" \"https://github.com/UN1CA/kernel_samsung_s5e8825.git\" \"$KERNEL_DIR\""
+        EVAL "git clone -j\"$(nproc --all)\" \"https://github.com/exynos1480/android_kernel_samsung_a55x.git\" \"$KERNEL_DIR\""
     fi
 
     if [[ -f "$KERNEL_DIR/.gitmodules" ]]; then
@@ -72,11 +72,6 @@ if [[ ! -d "$KERNEL_DIR" ]]; then
     LOG_STEP_OUT
 fi
 
-if ! $REGENERATE && [[ ! -f "$KERNEL_DIR/arch/arm64/configs/$DEVICE.config" ]]; then
-    LOGE "Configuration fragment for $DEVICE was not found"
-    exit 1
-fi
-
 if [[ ! -d "$TOOLCHAIN_DIR" ]]; then
     # shellcheck disable=SC2119
     GET_AOSP_CLANG || exit 1
@@ -85,17 +80,14 @@ else
 fi
 
 LOG_STEP_IN "- Generating configuration"
-BUILD_KERNEL "s5e8825_defconfig"
+BUILD_KERNEL "a55x_defconfig"
 
 if $REGENERATE; then
-    LOG "- Copying configuration to arch/arm64/configs/s5e8825_defconfig"
-    EVAL "cp -a \"$BUILD_DIR/.config\" \"$KERNEL_DIR/arch/arm64/configs/s5e8825_defconfig\""
+    LOG "- Copying configuration to arch/arm64/configs/a55x_defconfig"
+    EVAL "cp -a \"$BUILD_DIR/.config\" \"$KERNEL_DIR/arch/arm64/configs/a55x_defconfig\""
     LOG_STEP_OUT
     exit 0
 fi
-
-LOG "- Merging $DEVICE fragment"
-BUILD_KERNEL "$DEVICE.config"
 
 if $KSU; then
     LOG "- Merging KernelSU fragment"
