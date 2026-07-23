@@ -20,6 +20,7 @@ _PRINT_USAGE()
     echo "-h,--help        Prints this help menu"
     echo "--skip-avb       Skips AVB Sign"
     echo "--skip-lz4       Skips LZ4 Compression"
+    echo "--skip-recovery  Skips shipping recovery ramdisk"
 }
 
 BUILD_BOOT_IMAGE()
@@ -34,9 +35,23 @@ BUILD_BOOT_IMAGE()
     local CMD
     local KERNEL="$BUILD_DIR/arch/arm64/boot/Image"
     local RAMDISK="ramdisk"
+    local RECOVERY_RAMDISK=""
 
     if ! $SKIP_LZ4; then
         RAMDISK="ramdisk.lz4"
+    fi
+
+    if [[ "$IMAGE" == "vendor_boot" ]]; then
+        if [[ -f "$SRC_DIR/prebuilts/vboot_recovery/vendor_ramdisk_recovery.$DEVICE.lz4" ]]; then
+            RECOVERY_RAMDISK="$SRC_DIR/prebuilts/vboot_recovery/vendor_ramdisk_recovery.$DEVICE.lz4"
+        elif [[ -f "$SRC_DIR/prebuilts/vboot_recovery/vendor_ramdisk_recovery.lz4" ]]; then
+            RECOVERY_RAMDISK="$SRC_DIR/prebuilts/vboot_recovery/vendor_ramdisk_recovery.lz4"
+        fi
+
+        if [[ -z "$RECOVERY_RAMDISK" ]] && $WITH_RECOVERY; then
+            LOGE "Recovery ramdisk was requested but was not found in prebuilts/vboot_recovery"
+            return 1
+        fi
     fi
 
     LOG_STEP_IN "- Starting $IMAGE image build"
@@ -71,14 +86,20 @@ BUILD_BOOT_IMAGE()
         CMD+="--output \"$OUTPUT_DIR/$IMAGE.img\" "
         CMD+="--ramdisk \"$TMP_DIR/$RAMDISK\""
     elif [[ "$IMAGE" == "vendor_boot" ]]; then
-        SIZE="33554432"
+        SIZE="67108864"
         CMD+="--vendor_boot \"$OUTPUT_DIR/$IMAGE.img\" "
         CMD+="--vendor_bootconfig \"$TMP_DIR/bootconfig\" "
         CMD+="--dtb \"$TMP_DIR/dtb.img\" "
         CMD+="--vendor_ramdisk \"$TMP_DIR/ramdisk_platform.lz4\" "
         CMD+="--ramdisk_type \"dlkm\" "
         CMD+="--ramdisk_name \"dlkm\" "
-        CMD+="--vendor_ramdisk_fragment \"$TMP_DIR/ramdisk_dlkm.lz4\""
+        CMD+="--vendor_ramdisk_fragment \"$TMP_DIR/ramdisk_dlkm.lz4\" "
+
+        if [[ -n "$RECOVERY_RAMDISK" ]]; then
+            CMD+="--ramdisk_type \"recovery\" "
+            CMD+="--ramdisk_name \"recovery\" "
+            CMD+="--vendor_ramdisk_fragment \"$TMP_DIR/ramdisk_recovery.lz4\""
+        fi
     fi
 
     if [[ "$IMAGE" == "vendor_boot" ]]; then
@@ -110,6 +131,11 @@ BUILD_BOOT_IMAGE()
             cp -a {} \"$TMP_DIR/ramdisk_platform/vendor/firmware\" \;"
 
         EVAL "cd \"$TMP_DIR/ramdisk_platform\" && find . | cpio --quiet -o -H newc -R root:root | lz4 -9cl > \"$TMP_DIR/ramdisk_platform.lz4\"" || return 1
+
+        if [[ -n "$RECOVERY_RAMDISK" ]]; then
+            LOG "- Copying ${RECOVERY_RAMDISK//$SRC_DIR\//} to ramdisk_recovery.lz4"
+            EVAL "cp -a \"$RECOVERY_RAMDISK\" \"$TMP_DIR/ramdisk_recovery.lz4\""
+        fi
 
         if [[ -f "$TMP_DIR/bootconfig" ]]; then
             EVAL "rm -f \"$TMP_DIR/bootconfig\""
@@ -282,6 +308,7 @@ OUTPUT_DIR="$2"
 DEVICE=""
 SKIP_AVB=false
 SKIP_LZ4=false
+WITH_RECOVERY=true
 # ]
 
 if [[ "$1" != "boot" ]] && [[ "$1" != "dtb" ]] && \
@@ -315,6 +342,8 @@ while [[ "$1" == "-"* ]]; do
         SKIP_AVB=true
     elif [[ "$1" == "--skip-lz4" ]]; then
         SKIP_LZ4=true
+    elif [[ "$1" == "--skip-recovery" ]]; then
+        WITH_RECOVERY=false
     fi
 
     shift
