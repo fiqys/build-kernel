@@ -28,6 +28,22 @@ PRIORITY_MODULES=(
     "exynos_mct_v3.ko"
 )
 
+BLOCKLIST_MODULES=(
+    "gzvm.ko" "kheaders.ko" "zsmalloc.ko" "libarc4.ko" "zram.ko" "mii.ko"
+    "can-dev.ko" "vcan.ko" "slcan.ko" "ppp_generic.ko" "bsd_comp.ko"
+    "ppp_deflate.ko" "ppp_mppe.ko" "pppox.ko" "pptp.ko" "slhc.ko" "wwan.ko"
+    "rtl8150.ko" "r8152.ko" "asix.ko" "ax88179_178a.ko" "cdc_ether.ko"
+    "cdc_eem.ko" "usbnet.ko" "cdc_ncm.ko" "aqc111.ko" "r8153_ecm.ko"
+    "cdc-acm.ko" "usbserial.ko" "ftdi_sio.ko" "hci_uart.ko" "btsdio.ko"
+    "btbcm.ko" "btqca.ko" "8021q.ko" "can.ko" "can-raw.ko" "can-bcm.ko"
+    "can-gw.ko" "bluetooth.ko" "hidp.ko" "l2tp_core.ko" "l2tp_ppp.ko"
+    "tipc.ko" "diag.ko" "rfkill.ko" "6lowpan.ko" "nhc_dest.ko"
+    "nhc_fragment.ko" "nhc_hop.ko" "nhc_ipv6.ko" "nhc_mobility.ko"
+    "nhc_routing.ko" "nhc_udp.ko" "ieee802154_6lowpan.ko" "ieee802154.ko"
+    "ieee802154_socket.ko" "mac802154.ko" "nfc.ko" "scsc_wlan.ko"
+    "cfg80211.ko" "hdm.ko"
+)
+
 declare -A MODULE_MAP
 # ]
 
@@ -60,6 +76,13 @@ depmod -b "$(dirname "$(dirname "$(dirname "$KMODULES_DIR")")")" "$(basename "$K
 while IFS= read -r l; do
     basename "$l"
 done < "$MODULES_ORDER" > "$ALL_MODULES"
+
+if [[ "${#BLOCKLIST_MODULES[@]}" -gt "0" ]]; then
+    LOG "- Filtering out blocklisted modules"
+    for b in "${BLOCKLIST_MODULES[@]}"; do
+        EVAL "sed -i \"/^${b}\$/d\" \"$ALL_MODULES\""
+    done
+fi
 
 while IFS= read -r m; do
     EVAL "echo \"$m\" >> \"$TEMP_MODULES\""
