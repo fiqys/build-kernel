@@ -14,6 +14,7 @@ _PRINT_USAGE()
     echo "-k,--ksu         Makes a KernelSU Build"
     echo "-r,--regenerate  Regenerates the defconfig"
     echo "--skip-dtbo      Skips DTBO build"
+    echo "--skip-vb        Skips vendor_boot packaging"
     echo "-u,--upload      Creates a release on GitHub"
 }
 
@@ -28,6 +29,7 @@ KSU=false
 DEVICE=""
 POST=false
 SKIP_DTBO=false
+SKIP_VB=false
 BUILD_KERNEL_ARGS=""
 DATE="$(date +%Y%m%d-%H%M)"
 # ]
@@ -45,6 +47,8 @@ while [[ "$1" == "-"* ]]; do
         BUILD_KERNEL_ARGS+="-r "
     elif [[ "$1" == "--skip-dtbo" ]]; then
         SKIP_DTBO=true
+    elif [[ "$1" == "--skip-vb" ]]; then
+        SKIP_VB=true
     elif [[ "$1" == "-u" ]] || [[ "$1" == "--upload" ]]; then
         UPLOAD=true
         POST=true
@@ -100,7 +104,13 @@ for i in "boot" "vendor_boot"; do
 done
 
 LOG "- Creating Kernel TAR Archive"
-CREATE_TAR_ARCHIVE "$OUT/$KERNEL_TAR_NAME.tar" "$IMAGES_DIR/kernel/boot.img.lz4" "$IMAGES_DIR/kernel/vendor_boot.img.lz4" || exit 1
+TAR_IMAGES=("$IMAGES_DIR/kernel/boot.img.lz4")
+
+if ! $SKIP_VB; then
+    TAR_IMAGES+=("$IMAGES_DIR/kernel/vendor_boot.img.lz4")
+fi
+
+CREATE_TAR_ARCHIVE "$OUT/$KERNEL_TAR_NAME.tar" "${TAR_IMAGES[@]}" || exit 1
 
 if ! $SKIP_DTBO; then
     if [[ -d "$IMAGES_DIR/dtbo" ]]; then
